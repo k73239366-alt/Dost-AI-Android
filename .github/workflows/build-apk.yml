@@ -1,0 +1,57 @@
+name: Build DOST APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    name: Build Android APK
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Gradle 8.7
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.7'
+
+      - name: Extract DOST project
+        run: |
+          mkdir dost-project
+          unzip DOST_Advance_version.zip -d dost-project
+
+      - name: Check extracted project
+        working-directory: dost-project
+        run: |
+          ls -la
+          test -f settings.gradle.kts
+          test -f build.gradle.kts
+          test -f app/build.gradle.kts
+
+      - name: Build Debug APK
+        working-directory: dost-project
+        run: |
+          gradle assembleDebug --stacktrace
+
+      - name: Find APK
+        working-directory: dost-project
+        run: |
+          find app/build/outputs -type f -name "*.apk" -print
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: DOST-debug-APK
+          path: dost-project/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
